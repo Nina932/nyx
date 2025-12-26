@@ -1,5 +1,5 @@
-import prisma from '../_utils/prisma';
-import { verifyAuth } from '../_utils/auth';
+import prisma from '../../../_utils/prisma';
+import { verifyAuth } from '../../../_utils/auth';
 
 function transformRole(role: any) {
     return {

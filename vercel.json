@@ -2,64 +2,28 @@
     "version": 2,
     "rewrites": [
         {
-            "source": "/api/auth/me",
-            "destination": "/api/auth/me"
+            "source": "/api/auth/:path*",
+            "destination": "/api/auth/:path*"
         },
         {
-            "source": "/api/ai/usage",
-            "destination": "/api/ai/usage"
+            "source": "/api/ai/:path*",
+            "destination": "/api/ai/:path*"
         },
         {
-            "source": "/api/ai/chat",
-            "destination": "/api/ai/chat"
+            "source": "/api/employees/:path*",
+            "destination": "/api/resources/employees/:path*"
         },
         {
-            "source": "/api/ai/career-path",
-            "destination": "/api/ai/career-path"
+            "source": "/api/roles/:path*",
+            "destination": "/api/resources/roles/:path*"
         },
         {
-            "source": "/api/ai/skill-gap",
-            "destination": "/api/ai/skill-gap"
+            "source": "/api/policies/:path*",
+            "destination": "/api/resources/policies/:path*"
         },
         {
-            "source": "/api/ai/analyze-performance",
-            "destination": "/api/ai/analyze-performance"
-        },
-        {
-            "source": "/api/ai/simulation",
-            "destination": "/api/ai/simulation"
-        },
-        {
-            "source": "/api/ai/analyze-document",
-            "destination": "/api/ai/analyze-document"
-        },
-        {
-            "source": "/api/ai/policy-qa",
-            "destination": "/api/ai/policy-qa"
-        },
-        {
-            "source": "/api/employees",
-            "destination": "/api/employees/index"
-        },
-        {
-            "source": "/api/employees/:id",
-            "destination": "/api/employees/[id]"
-        },
-        {
-            "source": "/api/roles",
-            "destination": "/api/roles/index"
-        },
-        {
-            "source": "/api/roles/:id",
-            "destination": "/api/roles/[id]"
-        },
-        {
-            "source": "/api/policies",
-            "destination": "/api/policies/index"
-        },
-        {
-            "source": "/api/policies/:id",
-            "destination": "/api/policies/[id]"
+            "source": "/api/(.*)",
+            "destination": "/api/$1"
         },
         {
             "source": "/(.*)",

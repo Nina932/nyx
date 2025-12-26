@@ -1,10 +1,12 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import prisma from '../_utils/prisma';
+import prisma from '../../_utils/prisma';
 const JWKS_URL = process.env.SUPABASE_JWT_JWKS_URL;
 let JWKS: any = null;
 
 if (JWKS_URL) {
-    JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+    try {
+        JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+    } catch (e) { console.error('JWKS init error', e); }
 }
 
 export default async function handler(req: any, res: any) {
@@ -21,8 +23,13 @@ export default async function handler(req: any, res: any) {
         const token = authHeader.split(' ')[1];
 
         if (!JWKS) {
-            console.error('❌ JWKS not configured');
-            return res.status(500).json({ error: 'Authentication service misconfigured' });
+            // Try re-initializing if it failed first time (e.g. strict env)
+            if (process.env.SUPABASE_JWT_JWKS_URL) {
+                JWKS = createRemoteJWKSet(new URL(process.env.SUPABASE_JWT_JWKS_URL));
+            } else {
+                console.error('❌ JWKS not configured');
+                return res.status(500).json({ error: 'Authentication service misconfigured' });
+            }
         }
 
         const { payload } = await jwtVerify(token, JWKS);

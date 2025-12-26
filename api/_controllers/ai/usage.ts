@@ -1,5 +1,5 @@
-import prisma from '../_utils/prisma';
-import { verifyAuth } from '../_utils/auth';
+import prisma from '../../_utils/prisma';
+import { verifyAuth } from '../../_utils/auth';
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'GET') {
