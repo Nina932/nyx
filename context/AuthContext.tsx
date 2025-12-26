@@ -4,7 +4,18 @@ import { createClient, User as SupabaseUser } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Initialize supabase client only if URL is provided
+// This prevents a crash on initial render if env vars are missing
+let supabase: any;
+try {
+    if (supabaseUrl && supabaseAnonKey) {
+        supabase = createClient(supabaseUrl, supabaseAnonKey);
+    } else {
+        console.warn('⚠️ Supabase credentials not found. Auth will be disabled.');
+    }
+} catch (error) {
+    console.error('❌ Failed to initialize Supabase client:', error);
+}
 
 interface User {
     id: string;
@@ -38,8 +49,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
+        if (!supabase) {
+            setIsLoading(false);
+            return;
+        }
+
         // Check active session on mount
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(({ data: { session } }: any) => {
             if (session) {
                 setToken(session.access_token);
                 syncUser(session.user);
@@ -49,7 +65,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         });
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
             if (session) {
                 setToken(session.access_token);
                 syncUser(session.user);
@@ -83,6 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const login = async (email: string, password: string) => {
+        if (!supabase) throw new Error('Auth is not configured on the server.');
         const { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
@@ -96,6 +113,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const register = async (email: string, password: string) => {
+        if (!supabase) throw new Error('Auth is not configured on the server.');
         const { data, error } = await supabase.auth.signUp({
             email,
             password,
@@ -115,7 +133,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
+        if (supabase) {
+            await supabase.auth.signOut();
+        }
         setToken(null);
         setUser(null);
     };

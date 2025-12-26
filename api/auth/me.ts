@@ -1,7 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
-import { PrismaClient } from '.prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../_utils/prisma';
 const JWKS_URL = process.env.SUPABASE_JWT_JWKS_URL;
 let JWKS: any = null;
 
