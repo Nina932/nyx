@@ -1,14 +1,23 @@
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { PrismaClient } from '.prisma/client';
-import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+const JWKS_URL = process.env.SUPABASE_JWT_JWKS_URL;
+let JWKS: any = null;
 
-function getUserFromToken(authHeader: string | undefined) {
+if (JWKS_URL) {
+    JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+}
+
+async function getUserFromToken(authHeader: string | undefined) {
     if (!authHeader?.startsWith('Bearer ')) return null;
+    const token = authHeader.split(' ')[1];
+
+    if (!JWKS) return null;
+
     try {
-        const token = authHeader.split(' ')[1];
-        return jwt.verify(token, JWT_SECRET) as { userId: string | number; role: string };
+        const { payload } = await jwtVerify(token, JWKS);
+        return { userId: payload.sub, role: (payload.app_metadata as any)?.role || 'EMPLOYEE' };
     } catch {
         return null;
     }
@@ -21,7 +30,7 @@ export default async function handler(req: any, res: any) {
     }
 
     // Auth check
-    const user = getUserFromToken(req.headers.authorization);
+    const user = await getUserFromToken(req.headers.authorization);
     if (!user) {
         return res.status(401).json({ error: 'Unauthorized' });
     }

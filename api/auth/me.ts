@@ -1,8 +1,13 @@
-import jwt from 'jsonwebtoken';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { PrismaClient } from '.prisma/client';
 
 const prisma = new PrismaClient();
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
+const JWKS_URL = process.env.SUPABASE_JWT_JWKS_URL;
+let JWKS: any = null;
+
+if (JWKS_URL) {
+    JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+}
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'GET') {
@@ -16,10 +21,17 @@ export default async function handler(req: any, res: any) {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string | number; role: string };
+
+        if (!JWKS) {
+            console.error('❌ JWKS not configured');
+            return res.status(500).json({ error: 'Authentication service misconfigured' });
+        }
+
+        const { payload } = await jwtVerify(token, JWKS);
+        const userId = payload.sub;
 
         const user = await prisma.user.findUnique({
-            where: { id: String(decoded.userId) },
+            where: { id: String(userId) },
             select: { id: true, email: true, role: true, createdAt: true },
         });
 

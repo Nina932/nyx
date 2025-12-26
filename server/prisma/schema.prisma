@@ -43,15 +43,15 @@ model Employee {
   hireDate         DateTime
   educationEn      String
   educationKa      String
-  skills           Json
+  skills           Json     // Using proper Json type for Postgres
   performanceScore Int
   grade            String
-  careerGoalsEn    Json
-  careerGoalsKa    Json
-  performanceData  Json
+  careerGoalsEn    Json     // Using proper Json type for Postgres
+  careerGoalsKa    Json     // Using proper Json type for Postgres
+  performanceData  Json     // Using proper Json type for Postgres
   feedbackEn       String
   feedbackKa       String
-  digitalTwin      Json
+  digitalTwin      Json     // Using proper Json type for Postgres
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -64,7 +64,7 @@ model JobRole {
   id             Int      @id @default(autoincrement())
   titleEn        String
   titleKa        String
-  requiredSkills Json
+  requiredSkills Json     // Using proper Json type for Postgres
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -86,6 +86,15 @@ model TrainingCourse {
   title     String
   provider  String
   duration  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HRTemplate {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  title     String
+  content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -118,3 +127,4 @@ model AiAction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+

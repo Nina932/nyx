@@ -13,7 +13,7 @@ if (JWKS_URL) {
 }
 
 export interface AuthRequest extends Request {
-    userId?: string | number;
+    userId?: string;
     userRole?: string;
 }
 
