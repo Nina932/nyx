@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// User & Authentication
+// ============================================
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  role         String    @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  employee Employee?
+  aiUsage  AiUsage[]
+}
+
+// ============================================
+// Core HR Entities
+// ============================================
+
+model Employee {
+  id               Int      @id @default(autoincrement())
+  userId           Int?     @unique
+  nameEn           String
+  nameKa           String
+  currentRoleEn    String
+  currentRoleKa    String
+  departmentEn     String
+  departmentKa     String
+  hireDate         DateTime
+  educationEn      String
+  educationKa      String
+  skills           String   // JSON array as string
+  performanceScore Int
+  grade            String
+  careerGoalsEn    String   // JSON array as string
+  careerGoalsKa    String   // JSON array as string
+  performanceData  String   // JSON array as string
+  feedbackEn       String
+  feedbackKa       String
+  digitalTwin      String   // JSON object as string
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User?   @relation(fields: [userId], references: [id])
+  jobRole JobRole? @relation(fields: [jobRoleId], references: [id])
+  jobRoleId Int?
+}
+
+model JobRole {
+  id             Int      @id @default(autoincrement())
+  titleEn        String
+  titleKa        String
+  requiredSkills String   // JSON array as string
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  employees Employee[]
+}
+
+model Policy {
+  id        Int      @id @default(autoincrement())
+  titleEn   String
+  titleKa   String
+  contentEn String
+  contentKa String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TrainingCourse {
+  id        Int      @id @default(autoincrement())
+  title     String
+  provider  String
+  duration  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// AI Usage Tracking
+// ============================================
+
+model AiUsage {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  endpoint  String
+  tokens    Int      @default(0)
+  cost      Float    @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+// ============================================
+// Approvals Workflow
+// ============================================
+
+model AiAction {
+  id        Int      @id @default(autoincrement())
+  task      String
+  assignee  String
+  dueDate   String
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
