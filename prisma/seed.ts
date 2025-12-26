@@ -12,6 +12,7 @@ async function seed() {
         where: { email: 'admin@nyx.ge' },
         update: { passwordHash: adminPasswordHash, role: 'ADMIN' },
         create: {
+            id: 'admin-id-001',
             email: 'admin@nyx.ge',
             passwordHash: adminPasswordHash,
             role: 'ADMIN',

@@ -20,7 +20,9 @@ export default {
     "page_integrations": "Integrations & Data",
     "page_reporting": "Analytics & Reporting",
     "page_approvals": "Approvals Hub",
+    "page_admin": "Admin Core",
     "page_about": "About the CORE",
+    "reset_filters": "Reset Filters",
 
     "sub_roster": "Roster",
     "sub_orgChart": "Org Chart",

@@ -20,7 +20,9 @@ export default {
     "page_integrations": "ინტეგრაციები და მონაცემები",
     "page_reporting": "ანალიტიკა და რეპორტინგი",
     "page_approvals": "დასტურების ჰაბი",
+    "page_admin": "ადმინის პანელი",
     "page_about": "CORE-ის შესახებ",
+    "reset_filters": "ფილტრების გასუფთავება",
 
     "sub_roster": "თანამშრომლები",
     "sub_orgChart": "ორგ. სტრუქტურა",

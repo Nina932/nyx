@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '.prisma/client';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
@@ -16,10 +16,10 @@ export default async function handler(req: any, res: any) {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+        const decoded = jwt.verify(token, JWT_SECRET) as { userId: string | number; role: string };
 
         const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+            where: { id: String(decoded.userId) },
             select: { id: true, email: true, role: true, createdAt: true },
         });
 

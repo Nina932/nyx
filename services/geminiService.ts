@@ -2,11 +2,11 @@
 import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
 import type { GroundingChunk, Employee, CareerPath, JobRole, SkillGap, PerformanceData, Policy, TrainingCourse, SimulationStepResult, DataQueryResult, AiAction } from '../types';
 
-if (!process.env.API_KEY) {
-    console.warn("API_KEY environment variable not set. Please set your API key for the app to function.");
+if (!import.meta.env.VITE_GEMINI_API_KEY) {
+    console.warn("VITE_GEMINI_API_KEY environment variable not set. Please set your API key in .env for the app to function.");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || '' });
 
 export type Persona = 'general' | 'strategist' | 'data_analyst';
 
@@ -26,36 +26,36 @@ const personaConfig: Record<Persona, { model: string; systemInstruction: string 
 };
 
 export const getChatResponse = async (prompt: string, persona: Persona = 'general'): Promise<string> => {
-  try {
-    const config = personaConfig[persona];
-    const response = await ai.models.generateContent({
-      model: config.model,
-      contents: prompt,
-      config: {
-        systemInstruction: config.systemInstruction
-      }
-    });
-    return response.text;
-  } catch (error) {
-    console.error("Error in getChatResponse:", error);
-    return "Sorry, I encountered an error. Please check the console for details.";
-  }
+    try {
+        const config = personaConfig[persona];
+        const response = await ai.models.generateContent({
+            model: config.model,
+            contents: prompt,
+            config: {
+                systemInstruction: config.systemInstruction
+            }
+        });
+        return response.text;
+    } catch (error) {
+        console.error("Error in getChatResponse:", error);
+        return "Sorry, I encountered an error. Please check the console for details.";
+    }
 };
 
 export const getThinkingResponse = async (prompt: string): Promise<string> => {
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: prompt,
-      config: {
-        thinkingConfig: { thinkingBudget: 32768 },
-      },
-    });
-    return response.text;
-  } catch (error) {
-    console.error("Error in getThinkingResponse:", error);
-    return "Sorry, I encountered an error while thinking. Please check the console for details.";
-  }
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: prompt,
+            config: {
+                thinkingConfig: { thinkingBudget: 32768 },
+            },
+        });
+        return response.text;
+    } catch (error) {
+        console.error("Error in getThinkingResponse:", error);
+        return "Sorry, I encountered an error while thinking. Please check the console for details.";
+    }
 };
 
 interface GroundedResponse {
@@ -75,7 +75,7 @@ export const getSearchGroundedResponse = async (prompt: string): Promise<Grounde
 
         const text = response.text;
         const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
-        
+
         return { text, grounding: grounding as GroundingChunk[] };
     } catch (error) {
         console.error("Error in getSearchGroundedResponse:", error);
@@ -100,7 +100,7 @@ export const getMapsGroundedResponse = async (prompt: string): Promise<GroundedR
                 },
             },
         });
-        
+
         const text = response.text;
         const grounding = response.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
 
@@ -112,7 +112,7 @@ export const getMapsGroundedResponse = async (prompt: string): Promise<GroundedR
 };
 
 export const getCareerPath = async (employee: Employee): Promise<CareerPath> => {
-  const prompt = `
+    const prompt = `
     Analyze the following employee profile for a tech company in Tbilisi, Georgia and generate a personalized 2-step career progression path.
 
     Employee Profile:
@@ -131,42 +131,42 @@ export const getCareerPath = async (employee: Employee): Promise<CareerPath> => 
     Return ONLY the JSON object. The path should start from their current role.
   `;
 
-  try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-pro',
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            currentRole: { type: Type.STRING },
-            suggestedPath: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                properties: {
-                  role: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  skillsToDevelop: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  recommendedTraining: { type: Type.ARRAY, items: { type: Type.STRING } },
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-pro',
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        currentRole: { type: Type.STRING },
+                        suggestedPath: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    role: { type: Type.STRING },
+                                    description: { type: Type.STRING },
+                                    skillsToDevelop: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                    recommendedTraining: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                },
+                                required: ['role', 'description', 'skillsToDevelop', 'recommendedTraining'],
+                            },
+                        },
+                    },
+                    required: ['currentRole', 'suggestedPath'],
                 },
-                required: ['role', 'description', 'skillsToDevelop', 'recommendedTraining'],
-              },
             },
-          },
-          required: ['currentRole', 'suggestedPath'],
-        },
-      },
-    });
+        });
 
-    const jsonText = response.text.trim();
-    return JSON.parse(jsonText) as CareerPath;
+        const jsonText = response.text.trim();
+        return JSON.parse(jsonText) as CareerPath;
 
-  } catch (error) {
-    console.error("Error in getCareerPath:", error);
-    throw new Error("Failed to generate career path. Please check the console for details.");
-  }
+    } catch (error) {
+        console.error("Error in getCareerPath:", error);
+        throw new Error("Failed to generate career path. Please check the console for details.");
+    }
 };
 
 
@@ -317,7 +317,7 @@ export const analyzeDocument = async (text: string, task: 'summarize' | 'comply'
     const prompt = task === 'summarize'
         ? `Summarize the key points of the following document in a few bullet points:\n\n${text}`
         : `Analyze the following labor agreement text and check if it complies with these rules based on Georgian labor law. For each rule, state if it is "Compliant", "Non-Compliant", or "Not Mentioned". Provide a brief explanation for any non-compliant points.\n\nRules:\n${complianceRules}\n\nDocument Text:\n${text}`;
-    
+
     try {
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
@@ -446,7 +446,7 @@ export const runBusinessSimulation = async (scenarioPrompt: string, choicePrompt
                                 type: Type.OBJECT,
                                 properties: {
                                     textKey: { type: Type.STRING },
-                                    prompt: { 
+                                    prompt: {
                                         type: Type.OBJECT,
                                         properties: {
                                             en: { type: Type.STRING },

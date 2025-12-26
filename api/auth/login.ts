@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '.prisma/client';
 
 const prisma = new PrismaClient();
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
@@ -31,7 +31,7 @@ export default async function handler(req: any, res: any) {
         }
 
         // Generate token
-        const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, {
+        const token = jwt.sign({ userId: String(user.id), role: user.role }, JWT_SECRET, {
             expiresIn: JWT_EXPIRES_IN,
         });
 
