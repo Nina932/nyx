@@ -16,16 +16,16 @@ function transformEmployee(emp: any) {
         department: { en: emp.departmentEn, ka: emp.departmentKa },
         hireDate: emp.hireDate.toISOString().split('T')[0],
         education: { en: emp.educationEn, ka: emp.educationKa },
-        skills: JSON.parse(emp.skills || '[]'),
+        skills: emp.skills || [],
         performanceScore: emp.performanceScore,
         grade: emp.grade,
-        careerGoals: JSON.parse(emp.careerGoalsEn || '[]').map((goal: string, i: number) => ({
+        careerGoals: (emp.careerGoalsEn as string[] || []).map((goal: string, i: number) => ({
             en: goal,
-            ka: JSON.parse(emp.careerGoalsKa || '[]')[i] || goal,
+            ka: (emp.careerGoalsKa as string[] || [])[i] || goal,
         })),
-        performanceData: JSON.parse(emp.performanceData || '[]'),
+        performanceData: emp.performanceData || [],
         feedback: { en: emp.feedbackEn, ka: emp.feedbackKa },
-        digitalTwin: JSON.parse(emp.digitalTwin || '{}'),
+        digitalTwin: emp.digitalTwin || {},
     };
 }
 
@@ -74,15 +74,15 @@ router.post('/', async (req, res) => {
                 hireDate: new Date(data.hireDate),
                 educationEn: data.education?.en || data.educationEn,
                 educationKa: data.education?.ka || data.educationKa,
-                skills: JSON.stringify(data.skills || []),
+                skills: data.skills || [],
                 performanceScore: data.performanceScore || 0,
                 grade: data.grade || 'C',
-                careerGoalsEn: JSON.stringify(data.careerGoals?.map((g: any) => g.en) || []),
-                careerGoalsKa: JSON.stringify(data.careerGoals?.map((g: any) => g.ka) || []),
-                performanceData: JSON.stringify(data.performanceData || []),
+                careerGoalsEn: data.careerGoals?.map((g: any) => g.en) || [],
+                careerGoalsKa: data.careerGoals?.map((g: any) => g.ka) || [],
+                performanceData: data.performanceData || [],
                 feedbackEn: data.feedback?.en || '',
                 feedbackKa: data.feedback?.ka || '',
-                digitalTwin: JSON.stringify(data.digitalTwin || {}),
+                digitalTwin: data.digitalTwin || {},
             },
         });
         res.status(201).json(transformEmployee(employee));
@@ -107,7 +107,7 @@ router.put('/:id', async (req, res) => {
                 currentRoleKa: data.currentRole?.ka,
                 departmentEn: data.department?.en,
                 departmentKa: data.department?.ka,
-                skills: data.skills ? JSON.stringify(data.skills) : undefined,
+                skills: data.skills || undefined,
                 performanceScore: data.performanceScore,
                 grade: data.grade,
             },

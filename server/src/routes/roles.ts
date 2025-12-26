@@ -12,7 +12,7 @@ function transformRole(role: any) {
     return {
         id: role.id,
         title: { en: role.titleEn, ka: role.titleKa },
-        requiredSkills: JSON.parse(role.requiredSkills || '[]'),
+        requiredSkills: role.requiredSkills || [],
     };
 }
 
@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
             data: {
                 titleEn: title?.en || title || '',
                 titleKa: title?.ka || title || '',
-                requiredSkills: JSON.stringify(requiredSkills || []),
+                requiredSkills: requiredSkills || [],
             },
         });
         res.status(201).json(transformRole(role));
@@ -75,7 +75,7 @@ router.put('/:id', async (req, res) => {
             data: {
                 titleEn: title?.en,
                 titleKa: title?.ka,
-                requiredSkills: requiredSkills ? JSON.stringify(requiredSkills) : undefined,
+                requiredSkills: requiredSkills || undefined,
             },
         });
 
