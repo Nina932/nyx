@@ -15,9 +15,9 @@ router.use(requireAuth);
 router.use(aiRateLimiter);
 
 // Track AI usage
-async function trackUsage(userId: number, endpoint: string, tokens: number = 0) {
+async function trackUsage(userId: string | number, endpoint: string, tokens: number = 0) {
     await prisma.aiUsage.create({
-        data: { userId, endpoint, tokens, cost: tokens * 0.000001 }, // Placeholder cost
+        data: { userId: String(userId), endpoint, tokens, cost: tokens * 0.000001 }, // Placeholder cost
     });
 }
 
@@ -55,7 +55,9 @@ router.post('/chat', async (req: AuthRequest, res) => {
             config: { systemInstruction: config.systemInstruction },
         });
 
-        await trackUsage(req.userId!, 'chat', prompt.length);
+        if (req.userId) {
+            await trackUsage(req.userId, 'chat', prompt.length);
+        }
 
         res.json({ text: response.text });
     } catch (error) {
@@ -81,9 +83,9 @@ router.post('/career-path', async (req: AuthRequest, res) => {
       Employee Profile:
       - Name: ${employee.name?.en || employee.nameEn}
       - Current Role: ${employee.currentRole?.en || employee.currentRoleEn}
-      - Current Skills: ${Array.isArray(employee.skills) ? employee.skills.join(', ') : JSON.parse(employee.skills || '[]').join(', ')}
+      - Current Skills: ${Array.isArray(employee.skills) ? employee.skills.join(', ') : (typeof employee.skills === 'string' ? JSON.parse(employee.skills).join(', ') : '')}
       - Performance Score: ${employee.performanceScore}/100
-      - Stated Career Goals: ${Array.isArray(employee.careerGoals) ? employee.careerGoals.map((g: any) => g.en || g).join(', ') : JSON.parse(employee.careerGoalsEn || '[]').join(', ')}
+      - Stated Career Goals: ${Array.isArray(employee.careerGoalsEn) ? employee.careerGoalsEn.join(', ') : (typeof employee.careerGoalsEn === 'string' ? JSON.parse(employee.careerGoalsEn).join(', ') : '')}
 
       Based on this profile, suggest a realistic and ambitious career path. For each of the 2 steps, provide:
       1. A potential next role title.
@@ -122,9 +124,12 @@ router.post('/career-path', async (req: AuthRequest, res) => {
             },
         });
 
-        await trackUsage(req.userId!, 'career-path', prompt.length);
+        if (req.userId) {
+            await trackUsage(req.userId, 'career-path', prompt.length);
+        }
 
-        res.json(JSON.parse(response.text.trim()));
+        const responseText = response.text || (Array.isArray(req.body.employees) ? '[]' : '{}');
+        res.json(JSON.parse(responseText.trim()));
     } catch (error) {
         console.error('Career path error:', error);
         res.status(500).json({ error: 'Failed to generate career path' });
@@ -146,10 +151,10 @@ router.post('/skill-gap', async (req: AuthRequest, res) => {
       Analyze the provided list of employees and their skills against the job role requirements.
 
       Job Roles and Required Skills:
-      ${roles.map((r: any) => `- ${r.title?.en || r.titleEn}: ${Array.isArray(r.requiredSkills) ? r.requiredSkills.join(', ') : JSON.parse(r.requiredSkills || '[]').join(', ')}`).join('\n')}
+      ${roles.map((r: any) => `- ${r.titleEn}: ${Array.isArray(r.requiredSkills) ? r.requiredSkills.join(', ') : (typeof r.requiredSkills === 'string' ? JSON.parse(r.requiredSkills).join(', ') : '')}`).join('\n')}
 
       Employees and Their Current Skills:
-      ${employees.map((e: any) => `- ${e.name?.en || e.nameEn} (${e.currentRole?.en || e.currentRoleEn}): ${Array.isArray(e.skills) ? e.skills.join(', ') : JSON.parse(e.skills || '[]').join(', ')}`).join('\n')}
+      ${employees.map((e: any) => `- ${e.nameEn} (${e.currentRoleEn}): ${Array.isArray(e.skills) ? e.skills.join(', ') : (typeof e.skills === 'string' ? JSON.parse(e.skills).join(', ') : '')}`).join('\n')}
 
       Identify the top 3 most critical skill gaps. For each, provide:
       1. The name of the skill.
@@ -181,9 +186,12 @@ router.post('/skill-gap', async (req: AuthRequest, res) => {
             },
         });
 
-        await trackUsage(req.userId!, 'skill-gap', prompt.length);
+        if (req.userId) {
+            await trackUsage(req.userId, 'skill-gap', prompt.length);
+        }
 
-        res.json(JSON.parse(response.text.trim()));
+        const responseText = response.text || (Array.isArray(req.body.employees) ? '[]' : '{}');
+        res.json(JSON.parse(responseText.trim()));
     } catch (error) {
         console.error('Skill gap error:', error);
         res.status(500).json({ error: 'Failed to analyze skill gaps' });
@@ -241,9 +249,12 @@ router.post('/analyze-performance', async (req: AuthRequest, res) => {
             },
         });
 
-        await trackUsage(req.userId!, 'analyze-performance', prompt.length);
+        if (req.userId) {
+            await trackUsage(req.userId, 'analyze-performance', prompt.length);
+        }
 
-        res.json(JSON.parse(response.text.trim()));
+        const responseText = response.text || (Array.isArray(req.body.employees) ? '[]' : '{}');
+        res.json(JSON.parse(responseText.trim()));
     } catch (error) {
         console.error('Performance analysis error:', error);
         res.status(500).json({ error: 'Failed to analyze performance' });
@@ -303,9 +314,12 @@ router.post('/simulation', async (req: AuthRequest, res) => {
             },
         });
 
-        await trackUsage(req.userId!, 'simulation', prompt.length);
+        if (req.userId) {
+            await trackUsage(req.userId, 'simulation', prompt.length);
+        }
 
-        res.json(JSON.parse(response.text.trim()));
+        const responseText = response.text || (Array.isArray(req.body.employees) ? '[]' : '{}');
+        res.json(JSON.parse(responseText.trim()));
     } catch (error) {
         console.error('Simulation error:', error);
         res.status(500).json({ error: 'Failed to run simulation' });
@@ -335,7 +349,9 @@ router.post('/analyze-document', async (req: AuthRequest, res) => {
             contents: prompt,
         });
 
-        await trackUsage(req.userId!, 'analyze-document', prompt.length);
+        if (req.userId) {
+            await trackUsage(req.userId, 'analyze-document', prompt.length);
+        }
 
         res.json({ text: response.text });
     } catch (error) {
@@ -370,7 +386,9 @@ router.post('/policy-qa', async (req: AuthRequest, res) => {
             contents: prompt,
         });
 
-        await trackUsage(req.userId!, 'policy-qa', prompt.length);
+        if (req.userId) {
+            await trackUsage(req.userId, 'policy-qa', prompt.length);
+        }
 
         res.json({ text: response.text });
     } catch (error) {
@@ -383,7 +401,7 @@ router.post('/policy-qa', async (req: AuthRequest, res) => {
 router.get('/usage', async (req: AuthRequest, res) => {
     try {
         const usage = await prisma.aiUsage.findMany({
-            where: { userId: req.userId },
+            where: { userId: String(req.userId) },
             orderBy: { createdAt: 'desc' },
             take: 100,
         });

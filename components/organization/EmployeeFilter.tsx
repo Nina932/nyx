@@ -22,7 +22,7 @@ export const EmployeeFilter: React.FC<FilterProps> = ({ filters, setFilters }) =
         const { name, value } = e.target;
         setFilters((prev) => ({ ...prev, [name]: value }));
     };
-    
+
     // FIX: Removed `any` type from setFilters callback.
     const handleRangeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = parseInt(e.target.value, 10);
@@ -71,4 +71,8 @@ export const EmployeeFilter: React.FC<FilterProps> = ({ filters, setFilters }) =
                 />
             </div>
             <button onClick={handleReset} className="px-4 py-2 rounded-md bg-slate-600 hover:bg-slate-700 text-sm w-full md:w-auto">
-                
+                {t('employees')} (Reset)
+            </button>
+        </div>
+    );
+};

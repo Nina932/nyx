@@ -1,7 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createClient, User as SupabaseUser } from '@supabase/supabase-js';
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface User {
-    id: number;
+    id: string | number;
     email: string;
     role: 'ADMIN' | 'MANAGER' | 'EMPLOYEE';
 }
@@ -26,85 +32,90 @@ export const useAuth = () => {
     return context;
 };
 
-const TOKEN_KEY = 'nyx_token';
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(null);
     const [token, setToken] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    // Check for existing token on mount
     useEffect(() => {
-        const storedToken = localStorage.getItem(TOKEN_KEY);
-        if (storedToken) {
-            setToken(storedToken);
-            fetchUser(storedToken);
-        } else {
-            setIsLoading(false);
-        }
+        // Check active session on mount
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                setToken(session.access_token);
+                syncUser(session.user);
+            } else {
+                setIsLoading(false);
+            }
+        });
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+            if (session) {
+                setToken(session.access_token);
+                syncUser(session.user);
+            } else {
+                setToken(null);
+                setUser(null);
+                setIsLoading(false);
+            }
+        });
+
+        return () => subscription.unsubscribe();
     }, []);
 
-    const fetchUser = async (authToken: string) => {
+    const syncUser = async (sbUser: SupabaseUser) => {
         try {
-            const response = await fetch('/api/auth/me', {
-                headers: { Authorization: `Bearer ${authToken}` },
-            });
+            // Check if user exists in our DB, if not, they might need to be synced
+            // For now, we'll just map the Supabase user to our internal User type
+            // The 'role' is usually stored in app_metadata in Supabase
+            const role = (sbUser.app_metadata?.role as any) || 'EMPLOYEE';
 
-            if (response.ok) {
-                const userData = await response.json();
-                setUser(userData);
-            } else {
-                // Token invalid, clear it
-                localStorage.removeItem(TOKEN_KEY);
-                setToken(null);
-            }
+            setUser({
+                id: sbUser.id,
+                email: sbUser.email || '',
+                role: role,
+            });
         } catch (error) {
-            console.error('Failed to fetch user:', error);
-            localStorage.removeItem(TOKEN_KEY);
-            setToken(null);
+            console.error('Failed to sync user:', error);
         } finally {
             setIsLoading(false);
         }
     };
 
     const login = async (email: string, password: string) => {
-        const response = await fetch('/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email,
+            password,
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Login failed');
-        }
+        if (error) throw error;
+        if (!data.session) throw new Error('Login successful but no session returned');
 
-        const data = await response.json();
-        localStorage.setItem(TOKEN_KEY, data.token);
-        setToken(data.token);
-        setUser(data.user);
+        setToken(data.session.access_token);
+        syncUser(data.user);
     };
 
     const register = async (email: string, password: string) => {
-        const response = await fetch('/api/auth/register', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password }),
+        const { data, error } = await supabase.auth.signUp({
+            email,
+            password,
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Registration failed');
-        }
+        if (error) throw error;
+        if (!data.user) throw new Error('Registration failed');
 
-        const data = await response.json();
-        localStorage.setItem(TOKEN_KEY, data.token);
-        setToken(data.token);
-        setUser(data.user);
+        // If auto-confirm is on, we'll have a session
+        if (data.session) {
+            setToken(data.session.access_token);
+            syncUser(data.user);
+        } else {
+            // Handle case where email verification is required
+            alert('Please check your email for the confirmation link!');
+        }
     };
 
-    const logout = () => {
-        localStorage.removeItem(TOKEN_KEY);
+    const logout = async () => {
+        await supabase.auth.signOut();
         setToken(null);
         setUser(null);
     };

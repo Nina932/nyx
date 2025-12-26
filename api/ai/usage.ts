@@ -8,7 +8,7 @@ function getUserFromToken(authHeader: string | undefined) {
     if (!authHeader?.startsWith('Bearer ')) return null;
     try {
         const token = authHeader.split(' ')[1];
-        return jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
+        return jwt.verify(token, JWT_SECRET) as { userId: string | number; role: string };
     } catch {
         return null;
     }
@@ -28,7 +28,7 @@ export default async function handler(req: any, res: any) {
 
     try {
         const usage = await prisma.aiUsage.findMany({
-            where: { userId: user.userId },
+            where: { userId: String(user.userId) },
             orderBy: { createdAt: 'desc' },
             take: 100,
         });

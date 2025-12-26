@@ -1,14 +1,23 @@
 import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-change-me';
+const JWKS_URL = process.env.SUPABASE_JWT_JWKS_URL;
+let JWKS: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+if (JWKS_URL) {
+    try {
+        JWKS = createRemoteJWKSet(new URL(JWKS_URL));
+    } catch (error) {
+        console.error('❌ Failed to initialize JWKS:', error);
+    }
+}
 
 export interface AuthRequest extends Request {
-    userId?: number;
+    userId?: string | number;
     userRole?: string;
 }
 
-export function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
+export async function requireAuth(req: AuthRequest, res: Response, next: NextFunction) {
     try {
         const authHeader = req.headers.authorization;
 
@@ -17,13 +26,21 @@ export function requireAuth(req: AuthRequest, res: Response, next: NextFunction)
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
 
-        req.userId = decoded.userId;
-        req.userRole = decoded.role;
+        if (!JWKS) {
+            console.error('❌ JWKS not configured');
+            return res.status(500).json({ error: 'Authentication service misconfigured' });
+        }
+
+        const { payload } = await jwtVerify(token, JWKS);
+
+        // Supabase JWTs usually have 'sub' as UID and 'role' in app_metadata
+        req.userId = payload.sub;
+        req.userRole = (payload.app_metadata as any)?.role || 'EMPLOYEE';
 
         next();
     } catch (error) {
+        console.error('❌ Auth error:', error);
         return res.status(401).json({ error: 'Invalid token' });
     }
 }

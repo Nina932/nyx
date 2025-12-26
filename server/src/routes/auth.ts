@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { PrismaClient } from '@prisma/client';
@@ -31,7 +32,7 @@ router.post('/register', async (req, res) => {
 
         // Create user
         const user = await prisma.user.create({
-            data: { email, passwordHash, role },
+            data: { id: crypto.randomUUID(), email, passwordHash, role },
             select: { id: true, email: true, role: true, createdAt: true },
         });
 
@@ -99,7 +100,7 @@ router.get('/me', async (req, res) => {
         const decoded = jwt.verify(token, JWT_SECRET) as { userId: number; role: string };
 
         const user = await prisma.user.findUnique({
-            where: { id: decoded.userId },
+            where: { id: String(decoded.userId) },
             select: { id: true, email: true, role: true, createdAt: true },
         });
 

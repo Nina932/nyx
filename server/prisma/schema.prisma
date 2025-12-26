@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ============================================
@@ -15,7 +16,7 @@ datasource db {
 // ============================================
 
 model User {
-  id           Int       @id @default(autoincrement())
+  id           String    @id
   email        String    @unique
   passwordHash String
   role         String    @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
@@ -32,7 +33,7 @@ model User {
 
 model Employee {
   id               Int      @id @default(autoincrement())
-  userId           Int?     @unique
+  userId           String?  @unique
   nameEn           String
   nameKa           String
   currentRoleEn    String
@@ -42,15 +43,15 @@ model Employee {
   hireDate         DateTime
   educationEn      String
   educationKa      String
-  skills           String   // JSON array as string
+  skills           Json
   performanceScore Int
   grade            String
-  careerGoalsEn    String   // JSON array as string
-  careerGoalsKa    String   // JSON array as string
-  performanceData  String   // JSON array as string
+  careerGoalsEn    Json
+  careerGoalsKa    Json
+  performanceData  Json
   feedbackEn       String
   feedbackKa       String
-  digitalTwin      String   // JSON object as string
+  digitalTwin      Json
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -63,7 +64,7 @@ model JobRole {
   id             Int      @id @default(autoincrement())
   titleEn        String
   titleKa        String
-  requiredSkills String   // JSON array as string
+  requiredSkills Json
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -95,7 +96,7 @@ model TrainingCourse {
 
 model AiUsage {
   id        Int      @id @default(autoincrement())
-  userId    Int
+  userId    String
   endpoint  String
   tokens    Int      @default(0)
   cost      Float    @default(0)
