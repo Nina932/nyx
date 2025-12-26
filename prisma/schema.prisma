@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -42,15 +42,15 @@ model Employee {
   hireDate         DateTime
   educationEn      String
   educationKa      String
-  skills           String   // JSON array as string
+  skills           Json     // Using proper Json type for Postgres
   performanceScore Int
   grade            String
-  careerGoalsEn    String   // JSON array as string
-  careerGoalsKa    String   // JSON array as string
-  performanceData  String   // JSON array as string
+  careerGoalsEn    Json     // Using proper Json type for Postgres
+  careerGoalsKa    Json     // Using proper Json type for Postgres
+  performanceData  Json     // Using proper Json type for Postgres
   feedbackEn       String
   feedbackKa       String
-  digitalTwin      String   // JSON object as string
+  digitalTwin      Json     // Using proper Json type for Postgres
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -63,7 +63,7 @@ model JobRole {
   id             Int      @id @default(autoincrement())
   titleEn        String
   titleKa        String
-  requiredSkills String   // JSON array as string
+  requiredSkills Json     // Using proper Json type for Postgres
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -85,6 +85,15 @@ model TrainingCourse {
   title     String
   provider  String
   duration  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HRTemplate {
+  id        Int      @id @default(autoincrement())
+  slug      String   @unique
+  title     String
+  content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -117,3 +126,4 @@ model AiAction {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+

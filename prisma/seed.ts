@@ -3,64 +3,50 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function main() {
-    console.log('🌱 Seeding database...');
+async function seed() {
+    console.log('🌱 Starting TypeScript seeding...');
 
-    // Create admin user
-    const adminPassword = await bcrypt.hash('admin123', 10);
-    const admin = await prisma.user.upsert({
+    // Admin user (use upsert by unique email)
+    const adminPasswordHash = await bcrypt.hash('admin123', 10);
+    await prisma.user.upsert({
         where: { email: 'admin@nyx.ge' },
-        update: {},
+        update: { passwordHash: adminPasswordHash, role: 'ADMIN' },
         create: {
             email: 'admin@nyx.ge',
-            passwordHash: adminPassword,
+            passwordHash: adminPasswordHash,
             role: 'ADMIN',
         },
     });
-    console.log('✅ Created admin user:', admin.email);
+    console.log('✅ Admin user seeded');
 
-    // Create job roles
-    const roles = await Promise.all([
-        prisma.jobRole.upsert({
-            where: { id: 1 },
-            update: {},
-            create: {
-                id: 1,
+    // Job roles (createMany for speed; Prisma createMany ignores relations)
+    await prisma.jobRole.createMany({
+        skipDuplicates: true,
+        data: [
+            {
                 titleEn: 'Software Engineer',
                 titleKa: 'პროგრამული უზრუნველყოფის ინჟინერი',
                 requiredSkills: JSON.stringify(['React', 'Node.js', 'TypeScript', 'SQL']),
             },
-        }),
-        prisma.jobRole.upsert({
-            where: { id: 2 },
-            update: {},
-            create: {
-                id: 2,
+            {
                 titleEn: 'Product Manager',
                 titleKa: 'პროდუქტის მენეჯერი',
                 requiredSkills: JSON.stringify(['Agile', 'Roadmap Planning', 'User Research', 'Data Analysis']),
             },
-        }),
-        prisma.jobRole.upsert({
-            where: { id: 3 },
-            update: {},
-            create: {
-                id: 3,
+            {
                 titleEn: 'UI/UX Designer',
                 titleKa: 'UI/UX დიზაინერი',
                 requiredSkills: JSON.stringify(['Figma', 'User Persona', 'Prototyping']),
             },
-        }),
-    ]);
-    console.log('✅ Created', roles.length, 'job roles');
+        ],
+    });
+    console.log('✅ Job roles created (createMany)');
 
-    // Create employees
-    const employees = await Promise.all([
-        prisma.employee.upsert({
-            where: { id: 1 },
-            update: {},
-            create: {
-                id: 1,
+    // Employees (createMany). Note: createMany cannot set relations by nested create; set jobRoleId numerically where applicable.
+    await prisma.employee.createMany({
+        skipDuplicates: true,
+        data: [
+            {
                 nameEn: 'Ana Ivanova',
                 nameKa: 'ანა ივანოვა',
                 currentRoleEn: 'CEO',
@@ -88,12 +74,7 @@ async function main() {
                     sentiment: 'Positive',
                 }),
             },
-        }),
-        prisma.employee.upsert({
-            where: { id: 2 },
-            update: {},
-            create: {
-                id: 2,
+            {
                 nameEn: 'Luka Japaridze',
                 nameKa: 'ლუკა ჯაფარიძე',
                 currentRoleEn: 'CTO',
@@ -121,12 +102,7 @@ async function main() {
                     sentiment: 'Positive',
                 }),
             },
-        }),
-        prisma.employee.upsert({
-            where: { id: 3 },
-            update: {},
-            create: {
-                id: 3,
+            {
                 nameEn: 'Sandro Tskitishvili',
                 nameKa: 'სანდრო ცქიტიშვილი',
                 currentRoleEn: 'Lead Software Engineer',
@@ -155,12 +131,7 @@ async function main() {
                 }),
                 jobRoleId: 1,
             },
-        }),
-        prisma.employee.upsert({
-            where: { id: 4 },
-            update: {},
-            create: {
-                id: 4,
+            {
                 nameEn: 'Mariam Abashidze',
                 nameKa: 'მარიამ აბაშიძე',
                 currentRoleEn: 'Senior Product Manager',
@@ -189,12 +160,7 @@ async function main() {
                 }),
                 jobRoleId: 2,
             },
-        }),
-        prisma.employee.upsert({
-            where: { id: 5 },
-            update: {},
-            create: {
-                id: 5,
+            {
                 nameEn: 'Levan Gelovani',
                 nameKa: 'ლევან გელოვანი',
                 currentRoleEn: 'Software Engineer',
@@ -223,83 +189,117 @@ async function main() {
                 }),
                 jobRoleId: 1,
             },
-        }),
-    ]);
-    console.log('✅ Created', employees.length, 'employees');
+        ],
+    });
+    console.log('✅ Employees created (createMany)');
 
-    // Create policies
-    const policies = await Promise.all([
-        prisma.policy.upsert({
-            where: { id: 1 },
-            update: {},
-            create: {
-                id: 1,
+    // Policies (createMany)
+    await prisma.policy.createMany({
+        skipDuplicates: true,
+        data: [
+            {
                 titleEn: 'Remote Work Policy',
                 titleKa: 'დისტანციური მუშაობის პოლიტიკა',
                 contentEn: `Remote Work Policy
-
 1. Eligibility: All full-time employees who have completed their probation period (3 months) are eligible for remote work.
-
 2. Schedule: Employees may work remotely up to 3 days per week, with mandatory in-office presence on Tuesdays and Thursdays.
-
 3. Equipment: The company will provide a laptop and monitor. Employees are responsible for their internet connection (minimum 50 Mbps).
-
 4. Communication: Employees must be available on Slack during core hours (10:00 - 18:00 Tbilisi time).
-
 5. Performance: Remote work privileges may be revoked if performance metrics decline significantly.`,
                 contentKa: `დისტანციური მუშაობის პოლიტიკა
-
 1. უფლებამოსილება: ყველა სრულ განაკვეთზე მომუშავე თანამშრომელი, რომელსაც გავლილი აქვს საცდელი ვადა (3 თვე), უფლებამოსილია დისტანციურად მუშაობისთვის.
-
 2. გრაფიკი: თანამშრომლებს შეუძლიათ დისტანციურად იმუშაონ კვირაში 3 დღემდე, სამშაბათს და ხუთშაბათს ოფისში ყოფნა სავალდებულოა.
-
 3. აღჭურვილობა: კომპანია უზრუნველყოფს ლეპტოპს და მონიტორს. თანამშრომლები პასუხისმგებელნი არიან საკუთარ ინტერნეტ კავშირზე (მინიმუმ 50 Mbps).
-
 4. კომუნიკაცია: თანამშრომლები უნდა იყვნენ ხელმისაწვდომი Slack-ზე ძირითად საათებში (10:00 - 18:00 თბილისის დროით).
-
 5. შესრულება: დისტანციური მუშაობის პრივილეგია შეიძლება გაუქმდეს, თუ შესრულების მაჩვენებლები მნიშვნელოვნად დაიკლებს.`,
             },
-        }),
-        prisma.policy.upsert({
-            where: { id: 2 },
-            update: {},
-            create: {
-                id: 2,
+            {
                 titleEn: 'Annual Leave Policy',
                 titleKa: 'ყოველწლიური შვებულების პოლიტიკა',
                 contentEn: `Annual Leave Policy
-
 1. Entitlement: All employees are entitled to 24 working days of paid annual leave per year.
-
 2. Accrual: Leave accrues monthly at a rate of 2 days per month.
-
 3. Notice: Employees must request leave at least 2 weeks in advance for periods longer than 5 days.
-
 4. Carryover: Unused leave up to 5 days may be carried over to the next year.
-
 5. Public Holidays: Georgian public holidays are in addition to annual leave.`,
                 contentKa: `ყოველწლიური შვებულების პოლიტიკა
-
 1. უფლება: ყველა თანამშრომელს აქვს უფლება წელიწადში 24 სამუშაო დღის ანაზღაურებად ყოველწლიურ შვებულებაზე.
-
 2. დაგროვება: შვებულება გროვდება ყოველთვიურად თვეში 2 დღის ოდენობით.
-
 3. შეტყობინება: თანამშრომლებმა უნდა მოითხოვონ შვებულება მინიმუმ 2 კვირით ადრე 5 დღეზე მეტი პერიოდისთვის.
-
 4. გადატანა: გამოუყენებელი შვებულება 5 დღემდე შეიძლება გადავიდეს მომდევნო წელს.
-
 5. სახელმწიფო დღესასწაულები: საქართველოს სახელმწიფო დღესასწაულები ყოველწლიურ შვებულებას ემატება.`,
             },
-        }),
-    ]);
-    console.log('✅ Created', policies.length, 'policies');
+        ],
+    });
+    console.log('✅ Policies created (createMany)');
 
-    console.log('🎉 Seeding completed!');
+    // HR templates (createMany)
+    await prisma.hRTemplate.createMany({
+        skipDuplicates: true,
+        data: [
+            {
+                slug: 'hr-audit-checklist',
+                title: 'HR Audit Checklist Template',
+                content: `HR Audit Checklist Template
+[Insert full HR Audit Checklist content here — paste your long template content.]`,
+            },
+            {
+                slug: 'employee-development-plan',
+                title: 'Employee Development Plan Template',
+                content: `Employee Development Plan Template
+[Insert full Employee Development Plan content here.]`,
+            },
+            {
+                slug: 'competency-matrix',
+                title: 'Competency Matrix Template',
+                content: `Competency Matrix Template
+[Insert full Competency Matrix content here.]`,
+            },
+            {
+                slug: 'vacation-tracker',
+                title: 'Vacation Tracking Sheet Template',
+                content: `Vacation Tracking Sheet Template
+[Insert full Vacation Tracker content here.]`,
+            },
+            {
+                slug: 'learning-development-plan',
+                title: 'Learning and Development Plan Template',
+                content: `Learning & Development Plan Template
+[Insert full Learning & Development Plan content here.]`,
+            },
+            {
+                slug: 'policy-update-checklist',
+                title: 'HR Policy Update Checklist Template',
+                content: `HR Policy Update Checklist Template
+[Insert full Policy Update Checklist content here.]`,
+            },
+        ],
+    });
+    console.log('✅ HR templates created (createMany)');
+
+    // Training courses (example)
+    await prisma.trainingCourse.createMany({
+        skipDuplicates: true,
+        data: [
+            {
+                title: 'Effective Communication',
+                provider: 'Coursera',
+                duration: '4 weeks',
+            },
+            {
+                title: 'Advanced React',
+                provider: 'Udemy',
+                duration: '6 weeks',
+            },
+        ],
+    });
+    console.log('✅ Training courses created (createMany)');
+    console.log('🎉 TypeScript seeding finished');
 }
 
-main()
+seed()
     .catch((e) => {
-        console.error('❌ Seeding failed:', e);
+        console.error('❌ Seeding error:', e);
         process.exit(1);
     })
     .finally(async () => {
